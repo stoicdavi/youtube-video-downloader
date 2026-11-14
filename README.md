@@ -6,7 +6,27 @@ A small Ubuntu-based Docker image for running [yt-dlp](https://github.com/yt-dlp
 
 - Docker
 
-## Build
+## Use the Docker Hub Image
+
+Pull the published image:
+
+```sh
+docker pull daviddean181/youtube-dl
+```
+
+To run yt-dlp without saving the download to your host, pass a YouTube URL:
+
+```sh
+docker run --rm daviddean181/youtube-dl "<YOUTUBE_URL>"
+```
+
+The download is stored inside the container. `--rm` removes the container when yt-dlp exits, so the download is not retained. To save it in your current host directory, mount that directory at `/mydir`:
+
+```sh
+docker run --rm -v "$(pwd):/mydir" daviddean181/youtube-dl "<YOUTUBE_URL>"
+```
+
+## Build Locally
 
 From the project directory, build the image:
 
@@ -16,7 +36,7 @@ docker build -f Dockerfile.yt-dlp -t yt-dlp .
 
 The Dockerfile downloads the latest yt-dlp release when the image is built. Rebuild the image to pick up a newer release.
 
-## Download a URL
+## Download with the Local Image
 
 Mount a host directory at `/mydir` so downloaded files remain available after the container exits. Run this from the directory where you want the downloads saved:
 

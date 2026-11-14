@@ -1,63 +1,60 @@
 # yt-dlp Docker Image
 
-A small Ubuntu-based Docker image for running [yt-dlp](https://github.com/yt-dlp/yt-dlp). The image includes Python 3 and FFmpeg, so yt-dlp can download media and use FFmpeg for post-processing.
+A Docker image for running [yt-dlp](https://github.com/yt-dlp/yt-dlp), available in two variants. Both include Python 3 and FFmpeg.
+
+- **Alpine** (`Dockerfile.alpine`): smaller base image; runs as a non-root user and has no default URL.
+- **Ubuntu** (`Dockerfile.yt-dlp`): Ubuntu 24.04 base image; runs as root and uses a sample URL when no arguments are provided.
 
 ## Requirements
 
 - Docker
 
-## Use the Docker Hub Image
+## Build an Image
 
-Pull the published image:
-
-```sh
-docker pull daviddean181/youtube-dl
-```
-
-To run yt-dlp without saving the download to your host, pass a YouTube URL:
+Build either variant from the project directory:
 
 ```sh
-docker run --rm daviddean181/youtube-dl "<YOUTUBE_URL>"
+docker build -f Dockerfile.alpine -t yt-dlp:alpine .
+docker build -f Dockerfile.yt-dlp -t yt-dlp:ubuntu .
 ```
 
-The download is stored inside the container. `--rm` removes the container when yt-dlp exits, so the download is not retained. To save it in your current host directory, mount that directory at `/mydir`:
+Each build downloads the latest yt-dlp release. Rebuild an image to pick up a newer release.
+
+## Run a Variant
+
+Mount your current directory at `/mydir` to save downloads on your host. Choose the image tag for the variant you built:
 
 ```sh
-docker run --rm -v "$(pwd):/mydir" daviddean181/youtube-dl "<YOUTUBE_URL>"
+docker run --rm -v "$(pwd):/mydir" yt-dlp:alpine "<YOUTUBE_URL>"
+docker run --rm -v "$(pwd):/mydir" yt-dlp:ubuntu "<YOUTUBE_URL>"
 ```
 
-## Build Locally
-
-From the project directory, build the image:
+Arguments after the image name are passed directly to yt-dlp. For example, extract audio as MP3 with either variant:
 
 ```sh
-docker build -f Dockerfile.yt-dlp -t yt-dlp .
+docker run --rm -v "$(pwd):/mydir" yt-dlp:alpine -x --audio-format mp3 "<YOUTUBE_URL>"
 ```
 
-The Dockerfile downloads the latest yt-dlp release when the image is built. Rebuild the image to pick up a newer release.
+Without a mounted directory, downloads remain inside the container. With `--rm`, the container and its downloads are removed when yt-dlp exits. Provide a URL when running the Alpine image. The Ubuntu image uses its configured sample URL if you omit arguments.
 
-## Download with the Local Image
+## Docker Hub
 
-Mount a host directory at `/mydir` so downloaded files remain available after the container exits. Run this from the directory where you want the downloads saved:
+To publish both variants, tag and push them separately:
 
 ```sh
-docker run --rm -v "$PWD:/mydir" yt-dlp "https://www.youtube.com/watch?v=VIDEO_ID"
+docker tag yt-dlp:alpine daviddean181/youtube-dl:alpine
+docker push daviddean181/youtube-dl:alpine
+
+docker tag yt-dlp:ubuntu daviddean181/youtube-dl:ubuntu
+docker push daviddean181/youtube-dl:ubuntu
 ```
 
-Arguments after the image name are passed directly to yt-dlp. For example, to extract audio as MP3:
+After the tags have been pushed, pull and run the variant you want. Mount the current directory to keep downloads on the host:
 
 ```sh
-docker run --rm -v "$PWD:/mydir" yt-dlp -x --audio-format mp3 "https://www.youtube.com/watch?v=VIDEO_ID"
+docker pull daviddean181/youtube-dl:alpine
+docker run --rm -v "$(pwd):/mydir" daviddean181/youtube-dl:alpine "<YOUTUBE_URL>"
 ```
 
-FFmpeg is included in the image for supported extraction and conversion options.
+Use the `:ubuntu` tag instead for the Ubuntu variant. The untagged `daviddean181/youtube-dl` image refers to the repository's `latest` tag, which is independent of the `:alpine` and `:ubuntu` tags.
 
-## Default Behavior
-
-If you run the image without arguments, it uses the sample URL configured in the Dockerfile:
-
-```sh
-docker run --rm -v "$PWD:/mydir" yt-dlp
-```
-
-Providing a URL or other yt-dlp arguments replaces that default command. Downloads are written in `/mydir`; without a mounted directory, they remain inside the container and are removed when it exits with `--rm`.
